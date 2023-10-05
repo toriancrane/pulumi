@@ -53,3 +53,19 @@ func TestURNRoundTripping2(t *testing.T) {
 	assert.Equal(t, typ, urn.Type())
 	assert.Equal(t, name, urn.Name())
 }
+
+func TestURNRoundTripping3(t *testing.T) {
+	t.Parallel()
+
+	stack := tokens.QName("stck")
+	proj := tokens.PackageName("foo/bar/baz")
+	parentType := tokens.Type("parent$type")
+	typ := tokens.Type("bang:boom/fizzle:MajorResource")
+	name := tokens.QName("a-swell-resource::with_awkward$names")
+	urn := NewURN(stack, proj, parentType, typ, name)
+	assert.Equal(t, stack, urn.Stack())
+	assert.Equal(t, proj, urn.Project())
+	assert.Equal(t, tokens.Type("parent$type$bang:boom/fizzle:MajorResource"), urn.QualifiedType())
+	assert.Equal(t, typ, urn.Type())
+	assert.Equal(t, name, urn.Name())
+}

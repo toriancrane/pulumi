@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/pulumi/pulumi/pkg/v3/resource/deploy/providers"
+	pkgTokens "github.com/pulumi/pulumi/pkg/v3/tokens"
 	interceptors "github.com/pulumi/pulumi/pkg/v3/util/rpcdebug"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/diag"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/env"
@@ -1175,7 +1176,13 @@ func (rm *resmon) RegisterResource(ctx context.Context,
 	req *pulumirpc.RegisterResourceRequest,
 ) (*pulumirpc.RegisterResourceResponse, error) {
 	// Communicate the type, name, and object information to the iterator that is awaiting us.
-	name := tokens.QName(req.GetName())
+	rname, err := pkgTokens.ParseResourceName(req.Name)
+	if err != nil {
+		return nil, rpcerror.New(codes.InvalidArgument, fmt.Sprintf("invalid resource name: %s", req.Name))
+	}
+	// The rest of the system thinks resource names are QNames. It's far too much to change it all over so we just use
+	// ResourceName as a validator here, then lie.
+	name := tokens.QName(rname.String())
 	custom := req.GetCustom()
 	remote := req.GetRemote()
 	parent, err := resource.ParseOptionalURN(req.GetParent())

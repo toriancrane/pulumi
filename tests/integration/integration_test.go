@@ -826,7 +826,11 @@ func testConstructProviderPropagation(t *testing.T, lang string, deps []string) 
 
 			for _, res := range stackInfo.Deployment.Resources {
 				if res.URN.Type() == "testprovider:index:Random" {
-					gotProviders[res.URN.Name()] = resource.URN(res.Provider).Name()
+					ref, err := providers.ParseReference(res.Provider)
+					assert.NoError(t, err)
+					if err == nil {
+						gotProviders[res.URN.Name()] = ref.URN().Name()
+					}
 				}
 			}
 

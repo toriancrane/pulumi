@@ -106,7 +106,7 @@ func (urn URN) IsValid() bool {
 	if !strings.HasPrefix(string(urn), URNPrefix) {
 		return false
 	}
-	return len(strings.Split(string(urn), URNNameDelimiter)) == 4
+	return len(strings.Split(string(urn), URNNameDelimiter)) >= 4
 }
 
 // URNName returns the URN name part of a URN (i.e., strips off the prefix).
@@ -141,7 +141,8 @@ func (urn URN) Type() tokens.Type {
 
 // Name returns the resource name part of a URN.
 func (urn URN) Name() tokens.QName {
-	return tokens.QName(strings.Split(urn.URNName(), URNNameDelimiter)[3])
+	split := strings.SplitN(urn.URNName(), URNNameDelimiter, 4)
+	return tokens.QName(split[3])
 }
 
 // Returns a new URN with an updated name part
