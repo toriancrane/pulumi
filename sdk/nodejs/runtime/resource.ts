@@ -162,27 +162,33 @@ export function getResource(
                     if (monitor) {
                         resp = await debuggablePromise(
                             new Promise((resolve, reject) =>
-                                monitor.invoke(req, (rpcError: grpc.ServiceError | null, innerResponse: provproto.InvokeResponse | undefined) => {
-                                    log.debug(
-                                        `getResource Invoke RPC finished: err: ${rpcError}, resp: ${innerResponse}`,
-                                    );
-                                    if (rpcError) {
-                                        if (
-                                            rpcError.code === grpc.status.UNAVAILABLE ||
-                                            rpcError.code === grpc.status.CANCELLED
-                                        ) {
-                                            err = rpcError;
-                                            terminateRpcs();
-                                            rpcError.message = "Resource monitor is terminating";
-                                            (<any>preallocError).code = rpcError.code;
-                                        }
+                                monitor.invoke(
+                                    req,
+                                    (
+                                        rpcError: grpc.ServiceError | null,
+                                        innerResponse: provproto.InvokeResponse | undefined,
+                                    ) => {
+                                        log.debug(
+                                            `getResource Invoke RPC finished: err: ${rpcError}, resp: ${innerResponse}`,
+                                        );
+                                        if (rpcError) {
+                                            if (
+                                                rpcError.code === grpc.status.UNAVAILABLE ||
+                                                rpcError.code === grpc.status.CANCELLED
+                                            ) {
+                                                err = rpcError;
+                                                terminateRpcs();
+                                                rpcError.message = "Resource monitor is terminating";
+                                                (<any>preallocError).code = rpcError.code;
+                                            }
 
-                                        preallocError.message = `failed to get resource:urn=${urn}: ${rpcError.message}`;
-                                        reject(new Error(rpcError.details));
-                                    } else {
-                                        resolve(innerResponse);
-                                    }
-                                }),
+                                            preallocError.message = `failed to get resource:urn=${urn}: ${rpcError.message}`;
+                                            reject(new Error(rpcError.details));
+                                        } else {
+                                            resolve(innerResponse);
+                                        }
+                                    },
+                                ),
                             ),
                             opLabel,
                         );
@@ -294,7 +300,10 @@ export function readResource(
                             new Promise((resolve, reject) =>
                                 monitor.readResource(
                                     req,
-                                    (rpcError: grpc.ServiceError | null, innerResponse: resproto.ReadResourceResponse | undefined) => {
+                                    (
+                                        rpcError: grpc.ServiceError | null,
+                                        innerResponse: resproto.ReadResourceResponse | undefined,
+                                    ) => {
                                         log.debug(
                                             `ReadResource RPC finished: ${label}; err: ${rpcError}, resp: ${innerResponse}`,
                                         );
@@ -455,12 +464,12 @@ export function registerResource(
                 const aliasesList = await mapAliasesForRequest(resop.aliases, resop.parentURN);
                 req.setAliasesList(aliasesList);
             } else {
-                const urns = new Array<string>()
-                resop.aliases.forEach(v => {
+                const urns = new Array<string>();
+                resop.aliases.forEach((v) => {
                     if (typeof v === "string") {
-                        urns.push(v)
+                        urns.push(v);
                     }
-                })
+                });
                 req.setAliasurnsList(urns);
             }
             req.setImportid(resop.import || "");
@@ -511,7 +520,10 @@ export function registerResource(
                             new Promise((resolve, reject) =>
                                 monitor.registerResource(
                                     req,
-                                    (rpcErr: grpc.ServiceError | null, innerResponse: resproto.RegisterResourceResponse | undefined) => {
+                                    (
+                                        rpcErr: grpc.ServiceError | null,
+                                        innerResponse: resproto.RegisterResourceResponse | undefined,
+                                    ) => {
                                         if (rpcErr) {
                                             err = rpcErr;
                                             // If the monitor is unavailable, it is in the process of shutting down or has already
@@ -1044,28 +1056,31 @@ export function registerResourceOutputs(res: Resource, outputs: Inputs | Promise
                 const label = `monitor.registerResourceOutputs(${urn}, ...)`;
                 await debuggablePromise(
                     new Promise<void>((resolve, reject) =>
-                        monitor.registerResourceOutputs(req, (err: grpc.ServiceError | null, innerResponse: gempty.Empty | undefined) => {
-                            log.debug(
-                                `RegisterResourceOutputs RPC finished: urn=${urn}; ` +
-                                    `err: ${err}, resp: ${innerResponse}`,
-                            );
-                            if (err) {
-                                // If the monitor is unavailable, it is in the process of shutting down or has already
-                                // shut down. Don't emit an error and don't do any more RPCs, just exit.
-                                if (err.code === grpc.status.UNAVAILABLE || err.code === grpc.status.CANCELLED) {
-                                    terminateRpcs();
-                                    err.message = "Resource monitor is terminating";
-                                }
-
-                                reject(err);
-                            } else {
+                        monitor.registerResourceOutputs(
+                            req,
+                            (err: grpc.ServiceError | null, innerResponse: gempty.Empty | undefined) => {
                                 log.debug(
                                     `RegisterResourceOutputs RPC finished: urn=${urn}; ` +
                                         `err: ${err}, resp: ${innerResponse}`,
                                 );
-                                resolve();
-                            }
-                        }),
+                                if (err) {
+                                    // If the monitor is unavailable, it is in the process of shutting down or has already
+                                    // shut down. Don't emit an error and don't do any more RPCs, just exit.
+                                    if (err.code === grpc.status.UNAVAILABLE || err.code === grpc.status.CANCELLED) {
+                                        terminateRpcs();
+                                        err.message = "Resource monitor is terminating";
+                                    }
+
+                                    reject(err);
+                                } else {
+                                    log.debug(
+                                        `RegisterResourceOutputs RPC finished: urn=${urn}; ` +
+                                            `err: ${err}, resp: ${innerResponse}`,
+                                    );
+                                    resolve();
+                                }
+                            },
+                        ),
                     ),
                     label,
                 );

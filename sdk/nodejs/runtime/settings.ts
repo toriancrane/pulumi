@@ -425,19 +425,22 @@ export async function setRootResource(res: ComponentResource): Promise<void> {
     const urn = await res.urn.promise();
     req.setUrn(urn);
     return new Promise<void>((resolve, reject) => {
-        engineRef.setRootResource(req, (err: grpc.ServiceError | null, resp: engproto.SetRootResourceResponse | undefined) => {
-            // Back-compat case - if the engine we're speaking to isn't aware that it can save and load root
-            // resources, just ignore there's nothing we can do.
-            if (err && err.code === grpc.status.UNIMPLEMENTED) {
+        engineRef.setRootResource(
+            req,
+            (err: grpc.ServiceError | null, resp: engproto.SetRootResourceResponse | undefined) => {
+                // Back-compat case - if the engine we're speaking to isn't aware that it can save and load root
+                // resources, just ignore there's nothing we can do.
+                if (err && err.code === grpc.status.UNIMPLEMENTED) {
+                    return resolve();
+                }
+
+                if (err) {
+                    return reject(err);
+                }
+
                 return resolve();
-            }
-
-            if (err) {
-                return reject(err);
-            }
-
-            return resolve();
-        });
+            },
+        );
     });
 }
 
@@ -457,23 +460,26 @@ export async function monitorSupportsFeature(feature: string): Promise<boolean> 
         req.setId(feature);
 
         const result = await new Promise<boolean>((resolve, reject) => {
-            monitorRef.supportsFeature(req, (err: grpc.ServiceError | null, resp: resproto.SupportsFeatureResponse | undefined) => {
-                // Back-compat case - if the monitor doesn't let us ask if it supports a feature, it doesn't support
-                // secrets.
-                if (err && err.code === grpc.status.UNIMPLEMENTED) {
-                    return resolve(false);
-                }
+            monitorRef.supportsFeature(
+                req,
+                (err: grpc.ServiceError | null, resp: resproto.SupportsFeatureResponse | undefined) => {
+                    // Back-compat case - if the monitor doesn't let us ask if it supports a feature, it doesn't support
+                    // secrets.
+                    if (err && err.code === grpc.status.UNIMPLEMENTED) {
+                        return resolve(false);
+                    }
 
-                if (err) {
-                    return reject(err);
-                }
+                    if (err) {
+                        return reject(err);
+                    }
 
-                if (resp === undefined) {
-                    return reject(new Error("No response from resource monitor"));
-                }
+                    if (resp === undefined) {
+                        return reject(new Error("No response from resource monitor"));
+                    }
 
-                return resolve(resp.getHassupport());
-            });
+                    return resolve(resp.getHassupport());
+                },
+            );
         });
 
         localStore.settings.featureSupport[feature] = result;
